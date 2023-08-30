@@ -83,4 +83,22 @@ describe('compiler/Omit', () => {
     Fail(T, { y: 1, z: 1 })
     Ok(T, { x: 1, y: 1, z: 1 })
   })
+
+  it('Should not pass $id of source schema to the target schema', () => {
+    const A = Type.Object(
+      {
+        x: Type.Number(),
+        y: Type.Number(),
+        z: Type.Number(),
+      },
+      {
+        $id: 'A',
+      },
+    )
+    const B = Type.Omit(A, ['z'])
+    strictEqual(B.$id, undefined);
+ 
+    const C = Type.Omit(A, ['z'], { $id: 'C' })
+    strictEqual(C.$id, 'C')
+  })
 })

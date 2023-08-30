@@ -3090,6 +3090,9 @@ export class JsonTypeBuilder extends TypeBuilder {
       for (const key of Object.getOwnPropertyNames(object.properties)) {
         if (keys.includes(key as any)) delete object.properties[key]
       }
+      if (object.$id) {
+        delete object.$id;
+      }
       return this.Create(object)
     }, options)
   }
