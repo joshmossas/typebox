@@ -1,5 +1,5 @@
 import { Expect } from './assert'
-import { Type, TObject, TIntersect, TNumber, TBoolean } from '@sinclair/typebox'
+import { Type, TOptional, TObject, TUnion, TIntersect, TNumber, TString, TBoolean } from '@sinclair/typebox'
 
 // ----------------------------------------------------------------------------
 // Overlapping - Non Varying
@@ -63,7 +63,7 @@ import { Type, TObject, TIntersect, TNumber, TBoolean } from '@sinclair/typebox'
   })
   const T = Type.Composite([A, B])
   Expect(T).ToStatic<{
-    A: number | undefined
+    A?: number | undefined
   }>()
 }
 {
@@ -125,5 +125,89 @@ import { Type, TObject, TIntersect, TNumber, TBoolean } from '@sinclair/typebox'
   }> = Type.Composite([
     Type.Object({ x: Type.Number() }),
     Type.Object({ x: Type.Boolean() })
+  ])
+}
+// ------------------------------------------------------------------
+// Intersect
+// ------------------------------------------------------------------
+// prettier-ignore
+{
+  const T: TObject<{
+    x: TNumber;
+    y: TNumber;
+    z: TNumber;
+  }> = Type.Composite([
+    Type.Intersect([
+      Type.Object({ x: Type.Number() }),
+      Type.Object({ y: Type.Number() }),
+    ]),
+    Type.Intersect([
+      Type.Object({ z: Type.Number() })
+    ])
+  ])
+}
+// prettier-ignore
+{
+  const T: TObject<{
+    x: TIntersect<[TNumber, TNumber]>;
+    y: TIntersect<[TNumber, TNumber]>;
+  }> = Type.Composite([
+    Type.Intersect([
+      Type.Object({ x: Type.Number() }),
+      Type.Object({ y: Type.Number() }),
+    ]),
+    Type.Intersect([
+      Type.Object({ x: Type.Number() }),
+      Type.Object({ y: Type.Number() }),
+    ])
+  ])
+}
+// prettier-ignore
+{
+  const T: TObject<{
+    x: TIntersect<[TNumber, TNumber]>;
+  }> = Type.Composite([
+    Type.Intersect([
+      Type.Object({ x: Type.Optional(Type.Number()) }),
+      Type.Object({ x: Type.Number() }),
+    ])
+  ])
+}
+// prettier-ignore
+{
+  const T: TObject<{
+    x: TOptional<TIntersect<[TNumber, TNumber]>>;
+  }> = Type.Composite([
+    Type.Intersect([
+      Type.Object({ x: Type.Optional(Type.Number()) }),
+      Type.Object({ x: Type.Optional(Type.Number()) }),
+    ])
+  ])
+}
+// ------------------------------------------------------------------
+// Union
+// ------------------------------------------------------------------
+// prettier-ignore
+{
+  const T: TObject<{
+    x: TNumber;
+  }> = Type.Composite([
+    Type.Union([
+      Type.Object({ x: Type.Number() }),
+      Type.Object({ y: Type.Number() })
+    ]),
+    Type.Object({ x: Type.Number() })
+  ])
+}
+// prettier-ignore
+{
+  const T: TObject<{
+    x: TIntersect<[TUnion<[TString, TString]>, TNumber]>;
+  }> = Type.Composite([
+    Type.Union([
+      Type.Object({ x: Type.String() }),
+      Type.Object({ x: Type.String() })
+    ]),
+    Type.Object({ x: Type.Number() })
   ])
 }

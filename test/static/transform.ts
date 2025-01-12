@@ -1,4 +1,7 @@
 import { Type, TSchema, Static, StaticDecode, TObject, TNumber } from '@sinclair/typebox'
+import { TypeCheck } from '@sinclair/typebox/compiler'
+import { Value } from '@sinclair/typebox/value'
+
 import { Expect } from './assert'
 {
   // string > number
@@ -84,7 +87,7 @@ import { Expect } from './assert'
     .Encode((value) => ({
       id: 'A',
       nodes: [
-        { id: 'B', nodes: [] }, 
+        { id: 'B', nodes: [] },
         { id: 'C', nodes: [] }
       ]
     }))
@@ -112,7 +115,7 @@ import { Expect } from './assert'
     .Encode((value) => ({
       id: 'A',
       nodes: [
-        { id: 'B', nodes: [] }, 
+        { id: 'B', nodes: [] },
         { id: 'C', nodes: [] }
       ]
     }))
@@ -160,8 +163,8 @@ import { Expect } from './assert'
   // null to typebox type
   // prettier-ignore
   const T = Type.Transform(Type.Null())
-    .Decode(value => Type.Object({ 
-      x: Type.Number(), 
+    .Decode(value => Type.Object({
+      x: Type.Number(),
       y: Type.Number(),
       z: Type.Number()
     }))
@@ -180,7 +183,7 @@ import { Expect } from './assert'
   //   x: number;
   //   y: number;
   //   z: number;
-  // } // lol
+  // }
 }
 {
   // ensure decode as optional
@@ -189,8 +192,7 @@ import { Expect } from './assert'
     x: Type.Optional(Type.Number()),
     y: Type.Optional(Type.Number())
   })
-  Expect(T).ToStaticDecode<{ x: undefined; y: undefined }>()
-  Expect(T).ToStaticDecode<{ x: 1; y: 1 }>()
+  Expect(T).ToStaticDecode<{ x?: number | undefined; y?: number | undefined }>()
 }
 {
   // ensure decode as readonly
@@ -199,7 +201,7 @@ import { Expect } from './assert'
     x: Type.Readonly(Type.Number()),
     y: Type.Readonly(Type.Number())
   })
-  Expect(T).ToStaticDecode<{ readonly x: 1; readonly y: 1 }>()
+  Expect(T).ToStaticDecode<{ readonly x: number; readonly y: number }>()
 }
 {
   // ensure decode as optional union
@@ -210,20 +212,18 @@ import { Expect } from './assert'
       Type.Number()
     ]))
   })
-  Expect(T).ToStaticDecode<{ x: 1 }>()
-  Expect(T).ToStaticDecode<{ x: '1' }>()
-  Expect(T).ToStaticDecode<{ x: undefined }>()
+  Expect(T).ToStaticDecode<{ x?: string | number | undefined }>()
 }
 {
   // should decode within generic function context
   // https://github.com/sinclairzx81/typebox/issues/554
   // prettier-ignore
-  const ArrayOrSingle = <T extends TSchema>(schema: T) =>
-    Type.Transform(Type.Union([schema, Type.Array(schema)]))
-      .Decode((value) => (Array.isArray(value) ? value : [value]))
-      .Encode((value) => (value.length === 1 ? value[0] : value) as Static<T>[]);
-  const T = ArrayOrSingle(Type.String())
-  Expect(T).ToStaticDecode<string[]>()
+  // const ArrayOrSingle = <T extends TSchema>(schema: T) =>
+  //   Type.Transform(Type.Union([schema, Type.Array(schema)])[0])
+  //     .Decode((value) => (Array.isArray(value) ? value : [value]))
+  //     .Encode((value) => (value.length === 1 ? value[0] : value) as Static<T>[]);
+  // const T = ArrayOrSingle(Type.String())
+  // Expect(T).ToStaticDecode<string[]>()
 }
 {
   // should correctly decode record keys
@@ -253,4 +253,70 @@ import { Expect } from './assert'
     x: Type.Array(Type.Object({ y: Type.String() })),
   })
   Expect(T).ToStaticDecode<{ x: { y: string }[] }>()
+}
+{
+  // should decode generic union
+  const GenericUnion = <T extends TSchema>(t: T) => Type.Union([t, Type.Null()])
+  const T = Type.Transform(Type.String())
+    .Decode((value) => new Date(value))
+    .Encode((value) => value.toISOString())
+  Expect(T).ToStaticDecode<Date>()
+  Expect(GenericUnion(T)).ToStaticDecode<Date | null>()
+}
+{
+  // should decode generic tuple
+  const GenericTuple = <T extends TSchema>(t: T) => Type.Tuple([t, Type.Null()])
+  const T = Type.Transform(Type.String())
+    .Decode((value) => new Date(value))
+    .Encode((value) => value.toISOString())
+  Expect(T).ToStaticDecode<Date>()
+  Expect(GenericTuple(T)).ToStaticDecode<[Date, null]>()
+}
+{
+  // should decode generic intersect
+  const GenericIntersect = <T extends TSchema>(t: T) => Type.Intersect([t, Type.Literal(1)])
+  const T = Type.Transform(Type.Number())
+    .Decode((value) => value)
+    .Encode((value) => value)
+  Expect(T).ToStaticDecode<number>()
+  Expect(GenericIntersect(T)).ToStaticDecode<1>()
+}
+{
+  // should decode enum
+  enum E {
+    A,
+    B,
+    C,
+  }
+  const T = Type.Transform(Type.Enum(E))
+    .Decode((value) => 1 as const)
+    .Encode((value) => E.A)
+  Expect(T).ToStaticDecode<1>()
+  Expect(T).ToStaticEncode<E>()
+}
+{
+  // should transform functions
+  const S = Type.Transform(Type.Number())
+    .Decode((value) => new Date(value))
+    .Encode((value) => value.getTime())
+  const T = Type.Function([S], S)
+  Expect(T).ToStaticDecode<(x: Date) => Date>()
+  Expect(T).ToStaticEncode<(x: number) => number>()
+}
+{
+  // should transform constructors
+  const S = Type.Transform(Type.Number())
+    .Decode((value) => new Date(value))
+    .Encode((value) => value.getTime())
+  const T = Type.Constructor([S], S)
+  Expect(T).ToStaticDecode<new (x: Date) => Date>()
+  Expect(T).ToStaticEncode<new (x: number) => number>()
+}
+// -------------------------------------------------------------
+// https://github.com/sinclairzx81/typebox/issues/798
+// -------------------------------------------------------------
+{
+  const c1: TypeCheck<any> = {} as any
+  const x1 = c1.Decode({})
+  const x2 = Value.Decode({} as any, {})
 }

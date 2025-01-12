@@ -3,6 +3,18 @@ import { Type } from '@sinclair/typebox'
 import { Assert } from '../../assert/index'
 
 describe('value/check/Ref', () => {
+  // ----------------------------------------------------------------
+  // Deprecated
+  // ----------------------------------------------------------------
+  it('Should validate for Ref(Schema)', () => {
+    const T = Type.Number({ $id: 'T' })
+    const R = Type.Ref(T)
+    Assert.IsTrue(Value.Check(T, [T], 1234))
+    Assert.IsFalse(Value.Check(T, [T], 'hello'))
+  })
+  // ----------------------------------------------------------------
+  // Standard
+  // ----------------------------------------------------------------
   it('Should should validate when referencing a type', () => {
     const T = Type.Object(
       {
@@ -12,7 +24,7 @@ describe('value/check/Ref', () => {
       },
       { $id: Assert.NextId() },
     )
-    const R = Type.Ref(T)
+    const R = Type.Ref(T.$id!)
     Assert.IsEqual(
       Value.Check(R, [T], {
         x: 1,
@@ -32,7 +44,7 @@ describe('value/check/Ref', () => {
       },
       { $id: Assert.NextId() },
     )
-    const R = Type.Ref(T)
+    const R = Type.Ref(T.$id!)
     Assert.IsEqual(
       Value.Check(R, [T], {
         x: 1,
@@ -55,7 +67,7 @@ describe('value/check/Ref', () => {
         x: Type.Number(),
         y: Type.Number(),
         z: Type.Number(),
-        r: Type.Optional(Type.Ref(T)),
+        r: Type.Optional(Type.Ref(T.$id!)),
       },
       { $id: 'T' },
     )
@@ -76,7 +88,7 @@ describe('value/check/Ref', () => {
         nodes: Type.Array(Node),
       }),
     )
-    const R = Type.Ref(T)
+    const R = Type.Ref(T.$id!)
     Assert.IsEqual(Value.Check(R, [T], { id: '', nodes: [{ id: '', nodes: [] }] }), true)
     Assert.IsEqual(Value.Check(R, [T], { id: '', nodes: [{ id: 1, nodes: [] }] }), false)
   })

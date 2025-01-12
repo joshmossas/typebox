@@ -3,7 +3,7 @@ import { Expect } from './assert'
 
 {
   const T = Type.Exclude(Type.String(), Type.String())
-  Expect(T).ToStatic<never>()
+  Expect(T).ToStaticNever()
 }
 {
   const T = Type.Exclude(Type.String(), Type.Number())
@@ -21,7 +21,7 @@ import { Expect } from './assert'
   const B = Type.TemplateLiteral([Type.Union([Type.Literal('A'), Type.Literal('B'), Type.Literal('C')])])
 
   const T = Type.Exclude(A, B)
-  Expect(T).ToStatic<never>()
+  Expect(T).ToStaticNever()
 }
 {
   const A = Type.TemplateLiteral([Type.Union([Type.Literal('A'), Type.Literal('B'), Type.Literal('C')])])
@@ -44,7 +44,7 @@ import { Expect } from './assert'
   const B = Type.Union([Type.Literal('A'), Type.Literal('B'), Type.Literal('C')])
 
   const T = Type.Exclude(A, B)
-  Expect(T).ToStatic<never>()
+  Expect(T).ToStaticNever()
 }
 {
   const A = Type.TemplateLiteral([Type.Union([Type.Literal('A'), Type.Literal('B'), Type.Literal('C')])])
@@ -67,7 +67,7 @@ import { Expect } from './assert'
   const B = Type.TemplateLiteral([Type.Union([Type.Literal('A'), Type.Literal('B'), Type.Literal('C')])])
 
   const T = Type.Exclude(A, B)
-  Expect(T).ToStatic<never>()
+  Expect(T).ToStaticNever()
 }
 {
   const A = Type.Union([Type.Literal('A'), Type.Literal('B'), Type.Literal('C')])
@@ -81,4 +81,19 @@ import { Expect } from './assert'
   const B = Type.TemplateLiteral([Type.Union([Type.Literal('A')])])
   const T = Type.Exclude(A, B)
   Expect(T).ToStatic<'C' | 'B'>()
+}
+// https://github.com/sinclairzx81/typebox/issues/737
+{
+  const U = Type.Union([Type.Literal('A'), Type.Literal('B')])
+  const T = Type.Object({
+    type: Type.Exclude(U, Type.Literal('A')),
+  })
+  Expect(T).ToStatic<{ type: 'B' }>()
+}
+{
+  const U = Type.Union([Type.Literal('A'), Type.Literal('B'), Type.Literal('C')])
+  const T = Type.Object({
+    type: Type.Exclude(U, Type.Literal('A')),
+  })
+  Expect(T).ToStatic<{ type: 'B' | 'C' }>()
 }

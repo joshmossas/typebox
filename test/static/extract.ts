@@ -7,7 +7,7 @@ import { Expect } from './assert'
 }
 {
   const T = Type.Extract(Type.String(), Type.Number())
-  Expect(T).ToStatic<string>()
+  Expect(T).ToStaticNever()
 }
 {
   const T = Type.Extract(Type.Union([Type.Number(), Type.String(), Type.Boolean()]), Type.Number())
@@ -80,4 +80,21 @@ import { Expect } from './assert'
   const B = Type.TemplateLiteral([Type.Union([Type.Literal('A')])])
   const T = Type.Extract(A, B)
   Expect(T).ToStatic<'A'>()
+}
+// ------------------------------------------------------------------------
+// Nested (Inference Test)
+// ------------------------------------------------------------------------
+{
+  const U = Type.Union([Type.Literal('A'), Type.Literal('B')])
+  const T = Type.Object({
+    type: Type.Extract(U, Type.Literal('A')),
+  })
+  Expect(T).ToStatic<{ type: 'A' }>()
+}
+{
+  const U = Type.Union([Type.Literal('A'), Type.Literal('B'), Type.Literal('C')])
+  const T = Type.Object({
+    type: Type.Extract(U, Type.Union([Type.Literal('A'), Type.Literal('B')])),
+  })
+  Expect(T).ToStatic<{ type: 'A' | 'B' }>()
 }
